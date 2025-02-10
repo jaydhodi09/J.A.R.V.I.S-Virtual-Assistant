@@ -1,0 +1,8 @@
+
+   
+
+
+# pakages install speechrecognition, wikipedia , openai , PyAudio , setuptools , pocketsphinx
+
+
+ build in module ---- webbrowser 

@@ -1,0 +1,95 @@
+import speech_recognition as sr
+import webbrowser
+import pyttsx3
+import requests
+import os
+import google.generativeai as genai  # Correct import
+
+# Initialize text-to-speech engine
+engine = pyttsx3.init()
+
+# Set up API keys securely
+GOOGLE_API_KEY = "AIzaSyALq0PF4TB6hDWIZOTc9TFptic4XVEGhFk"  # Replace with your actual API key
+NEWS_API_KEY = "ef7c4b0a43234333bc3a90d04eb09c86"      # Replace with your actual NewsAPI key
+
+# Configure Gemini API
+genai.configure(api_key=GOOGLE_API_KEY)
+
+def speak(text):
+    """Speak the given text using TTS."""
+    engine.say(text)
+    engine.runAndWait()
+
+def aiProcess(command):
+    """Send a command to the Gemini AI model and return the response."""
+    print(f"User Command: {command}")  # Show command input
+    model = genai.GenerativeModel("gemini-pro")  # Use Gemini AI
+    response = model.generate_content(command)
+    return response.text
+
+def processCommand(c):
+    """Process user commands for opening websites, playing music, or fetching news."""
+    c = c.lower()  # Convert command to lowercase
+
+    if "open google" in c:
+        webbrowser.open("https://google.com")
+    elif "open facebook" in c:
+        webbrowser.open("https://facebook.com")
+    elif "open youtube" in c:
+        webbrowser.open("https://youtube.com")
+    elif "open linkedin" in c:
+        webbrowser.open("https://linkedin.com")
+    elif "open github" in c:
+        webbrowser.open("https://github.com/jaydhodi09")
+    elif c.startswith("play"):
+        song = c.split(" ")[1]
+        try:
+            import musicLibrary
+            link = musicLibrary.music[song]
+            webbrowser.open(link)
+        except (ImportError, KeyError):
+            speak("Sorry, I couldn't find that song.")
+    elif "news" in c:
+        r = requests.get(f"https://newsapi.org/v2/top-headlines?country=in&apiKey={NEWS_API_KEY}")
+        if r.status_code == 200:
+            data = r.json()
+            articles = data.get("articles", [])
+            for i, article in enumerate(articles[:5], 1):  # Limit to 5 news articles
+                print(f"{i}. {article['title']}")
+                speak(article["title"])
+        else:
+            speak("Sorry, I couldn't fetch the news.")
+    else:
+        # Let AI handle unknown requests
+        output = aiProcess(c)
+        speak(output)
+
+if __name__ == '__main__':
+    speak("Initializing JARVIS...")
+
+recognizer = sr.Recognizer()
+
+while True:
+    try:
+        with sr.Microphone() as source:
+            print("Listening for wake word 'Jarvis'...")
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=3)
+        
+        word = recognizer.recognize_google(audio).lower()
+        if word == "jarvis":
+            speak("Yes Jay, say something?")
+            
+            # Listen for the actual command
+            with sr.Microphone() as source:
+                print("Jarvis Active...")
+                audio = recognizer.listen(source)
+                command = recognizer.recognize_google(audio)
+                
+            processCommand(command)
+    
+    except sr.UnknownValueError:
+        print("Could not understand audio.")
+    except sr.RequestError:
+        print("Speech Recognition API error.")
+    except Exception as e:
+        print(f"Error: {e}")
